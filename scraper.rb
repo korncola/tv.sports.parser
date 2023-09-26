@@ -1,20 +1,40 @@
 #!/usr/bin/env ruby
 require 'ferrum'
 require 'nokogiri'
+require 'net/http'
 
 
 def scrape_site
-  cookie = "not_checked_settings=1; user_country_id=202; user_country=2; date_format_short=%25e+%25b; sportsorder=1%2C18%2C15%2C29%2C7%2C8%2C14%2C39%2C40%2C13%2C21%2C10%2C4%2C17%2C27%2C51%2C22%2C28%2C37%2C19%2C5%2C44%2C53%2C26%2C25%2C56%2C12%2C54%2C35%2C50%2C16%2C43%2C32%2C47%2C42%2C36%2C33%2C6%2C20%2C55%2C45%2C38%2C34%2C24%2C46%2C52%2C31%2C30%2C48%2C9%2C57%2C49%2C11%2C41; sportsorderrev=41%2C11%2C49%2C57%2C9%2C48%2C30%2C31%2C52%2C46%2C24%2C34%2C38%2C45%2C55%2C20%2C6%2C33%2C36%2C42%2C47%2C32%2C43%2C16%2C50%2C35%2C54%2C12%2C56%2C25%2C26%2C53%2C44%2C5%2C19%2C37%2C28%2C22%2C51%2C27%2C17%2C4%2C10%2C21%2C13%2C40%2C39%2C14%2C8%2C7%2C29%2C15%2C18%2C1; show_college=1; show_woman=1; time_format_12=0; user_time_zone=Europe%2FBerlin; user_time_zone_id=2; mycountriesorder=2%2C15; lang=1; loc_lang=1; date_format=d.m.Y; myleagues=1%2C10%2C39%2C67%2C18%2C17%2C48%2C2%2C19%2C3; mysports=1%2C18%2C15%2C29%2C7%2C8%2C14%2C39%2C40%2C13%2C21%2C10%2C4%2C17%2C27%2C19%2C35%2C32%2C52%2C11; mysports7=1%2C18%2C15%2C29%2C8%2C14%2C39%2C13%2C21%2C10%2C4%2C17%2C27%2C19%2C35%2C32%2C52%2C11; mysports40=1%2C18%2C15%2C29%2C8%2C14%2C39%2C13%2C21%2C10%2C4%2C17%2C27%2C19%2C35%2C32%2C52%2C11; myteams=2464%2C3%2C4%2C2249%2C2607%2C3923%2C3917%2C2468%2C2250%2C2454%2C2247%2C6%2C155%2C102%2C94%2C1961%2C20922; search_type=3; exclude_stations=%7B%22101%22%3A%5B%221952%22%2C%222529%22%2C%222849%22%5D%2C%222%22%3A%5B711%5D%2C%224%22%3A%5B2813%5D%7D; mycountries=%2C4%2C5%2C6%2C2%2C18%2C10%2C76%2C101%2C33; visitedleagues=4%2C2%2C10; s_sessions=0j6tl87m7i8a4n9sk0p4m1nvcfl0vcdp; myid=f02dd32761828f0cb7f"
-  browser = Ferrum::Browser.new
-  browser.headers.add({"Cookie" => cookie})
-  browser.go_to("https://sport-tv-guide.live/live/allsports")
+  browser = Ferrum::Browser.new({
+    headless: "new",
+    host: "localhost",
+    port: 6766,
+    window_size: [1920,1080],
+  })
+  browser.cookies.set(name: "user_country_id", value: "202", domain: "sport-tv-guide.live")
+  browser.cookies.set(name: "user_country", value: "2", domain: "sport-tv-guide.live")
+  browser.cookies.set(name: "lang", value: "2", domain: "sport-tv-guide.live")
+  browser.cookies.set(name: "loc_lang", value: "2", domain: "sport-tv-guide.live")
+  browser.cookies.set(name: "time_format_12", value: "0", domain: "sport-tv-guide.live")
+  browser.cookies.set(name: "user_time_zone", value: "Europe%2FBerlin", domain: "sport-tv-guide.live")
+  browser.cookies.set(name: "user_time_zone_id", value: "2", domain: "sport-tv-guide.live")
+  browser.cookies.set(name: "mycountries", value: "%2C4%2C5%2C6%2C2%2C101", domain: "sport-tv-guide.live")
+  browser.cookies.set(name: "exclude_stations", value: "%7B%22101%22%3A%5B%221952%22%2C%222529%22%2C%222849%22%2C931%5D%2C%222%22%3A%5B711%5D%2C%224%22%3A%5B2813%5D%7D", domain: "sport-tv-guide.live")
+
+  browser.go_to("https://sport-tv-guide.live/de/live/allsports")
+  browser.mouse.click(:x => 60, :y => 150)
   y = 0
-  10.times do
-    y += 1000
-    browser.screenshot(path: "google-#{y}.png")
+  40.times do
+    y += 200
+    browser.screenshot(path: "screenshots/debug-#{y}.png")
+    #browser.mouse.down
     browser.mouse.scroll_to(0, y)
+    sleep 1
   end
-  html = browser.body
+  browser.body
+end
+
+def parse_html(html)
   doc = Nokogiri::HTML(html)
   listings = Array.new
   doc.css('div.listData').xpath('//a[@class="article flag"]').css('div.row').map do |row|
@@ -28,7 +48,6 @@ def scrape_site
     listing = Listing.new(time, sport, league, event, stations)
     listings << listing
   end
-  browser.quit
   listings
 end
 
@@ -39,5 +58,6 @@ def print_wordpress(listings)
 end
 
 Listing = Struct.new(:time, :sport, :league, :event, :stations)
-listings = scrape_site()
+html = scrape_site()
+listings = parse_html(html)
 print_wordpress(listings)
