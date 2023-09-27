@@ -26,7 +26,7 @@ def scrape_site
   y = 0
   40.times do
     y += 200
-    browser.screenshot(path: "screenshots/debug-#{y}.png")
+    #browser.screenshot(path: "screenshots/debug-#{y}.png")
     #browser.mouse.down
     browser.mouse.scroll_to(0, y)
     sleep 1
