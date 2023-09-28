@@ -1,15 +1,13 @@
 #!/usr/bin/env ruby
 require 'ferrum'
 require 'nokogiri'
-require 'net/http'
-
 
 def scrape_site
   browser = Ferrum::Browser.new({
     headless: "new",
     host: "localhost",
     port: 6766,
-    window_size: [1920,1080],
+    window_size: [1920,1080]
   })
   browser.cookies.set(name: "user_country_id", value: "202", domain: "sport-tv-guide.live")
   browser.cookies.set(name: "user_country", value: "2", domain: "sport-tv-guide.live")
@@ -51,7 +49,7 @@ def parse_html(html)
   listings
 end
 
-def print_wordpress(listings)
+def print_listings(listings)
   listings.each do |listing|
     puts "#{listing.time} <strong>#{listing.sport} #{listing.league}</strong> #{listing.event} @ #{listing.stations.join('|')}"
   end
@@ -60,4 +58,4 @@ end
 Listing = Struct.new(:time, :sport, :league, :event, :stations)
 html = scrape_site()
 listings = parse_html(html)
-print_wordpress(listings)
+print_listings(listings)
